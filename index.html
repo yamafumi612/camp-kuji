@@ -231,7 +231,6 @@ const recipeData={
 function detailedDishFallback(dish){return{ingredients:[`${dish}の主材料 2〜3人分`,"玉ねぎ 1/2個","好みの野菜 2〜3種類","油 適量","塩・こしょう 適量","しょうゆ等の基本調味料 適量"],steps:[`${dish}の材料を食べやすい大きさに切る。`,"火の通りにくい材料から順に加熱する。","全体に火が通るまで加熱する。","調味料を加えて全体を混ぜる。","中心まで十分に火が通っていることを確認する。"]};}
 function renderResult(){
   const r=state.result, e=estimate();
-  $('resultMode').textContent=state.mode==="B"?"B方式":"C方式";
   $('resultTickets').textContent=state.tickets;
   let html="";
   if(state.mode==="B"){
@@ -251,18 +250,6 @@ function renderResult(){
 
   $('retryGrid').innerHTML=buttons.map(b=>`<button class="retry-btn" data-retry="${b.key}" ${state.tickets<=0||state.used[b.key]?'disabled':''}>${b.label}</button>`).join('');
 
-  const detail = state.mode==="B"
-    ? (recipeData[r.dish] || detailedDishFallback(r.dish))
-    : {
-        ingredients:[`${r.ingredient}`,"玉ねぎ 1/2個","にんにく 1片","好みの野菜 1〜2種類","油 適量","塩・こしょう 適量","調味料 適量"],
-        steps:[
-          `${r.ingredient}を食べやすい大きさに切る。`,
-          ...(methodSteps[r.method] || ["フライパンまたは鍋を熱する。","食材を加えて火が通るまで加熱する。"]),
-          "味を確認し、必要に応じて調味料で整える。"
-        ]
-      };
-  $("shopping").innerHTML = detail.ingredients.map(x=>`<li>${x}</li>`).join('');
-
   const methodSteps = {
     "鉄板焼き":["鉄板を十分に熱する。","食材を鉄板に並べて焼く。","焼き色がついたら裏返し、火が通るまで焼く。"],
     "網焼き":["網を十分に熱する。","食材を網に並べて焼く。","焼き色がついたら裏返し、中心まで火が通るように焼く。"],
@@ -279,6 +266,19 @@ function renderResult(){
     "炭火焼き":["炭火を安定させる。","食材を網に並べて焼く。","向きを変えながら全体に火を通す。"],
     "焚き火料理":["火力が安定した状態にする。","鍋やフライパンに食材を入れて加熱する。","火力を調整しながら中心まで火を通す。"]
   };
+
+  const detail = state.mode==="B"
+    ? (recipeData[r.dish] || detailedDishFallback(r.dish))
+    : {
+        ingredients:[`${r.ingredient}`,"玉ねぎ 1/2個","にんにく 1片","好みの野菜 1〜2種類","油 適量","塩・こしょう 適量","調味料 適量"],
+        steps:[
+          `${r.ingredient}を食べやすい大きさに切る。`,
+          ...(methodSteps[r.method] || ["フライパンまたは鍋を熱する。","食材を加えて火が通るまで加熱する。"]),
+          "味を確認し、必要に応じて調味料で整える。"
+        ]
+      };
+  $("shopping").innerHTML = detail.ingredients.map(x=>`<li>${x}</li>`).join('');
+
   $("recipe").innerHTML = detail.steps.map(x=>`<li>${x}</li>`).join('');
 
   document.querySelectorAll('[data-retry]').forEach(btn=>btn.addEventListener('click',()=>retry(btn.dataset.retry)));
