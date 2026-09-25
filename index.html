@@ -451,30 +451,49 @@ let drawFinished=false;
 function finishDraw(){
   if(drawFinished) return;
   drawFinished=true;
-  // 先に結果画面へ切り替えることで、抽選処理中の例外で画面が固まるのを防ぐ
   show('result');
   try{
-    makeResult();
+    // 結果はクリック時点ですでに作成済み。ここでは表示だけ更新する。
+    renderResult();
   }catch(err){
-    console.error('CAMPくじ: 抽選結果の生成に失敗しました',err);
-    // 万一データ生成でエラーが出ても、最低限の結果を表示する
-    if(state.mode==='B'){
-      state.result={dish:pick(dishes),constraint:pick(constraints)};
-    }else{
-      const ing=pick(ingredients);
-      state.result={ingredient:ing,dish:pickDishForIngredient(ing),method:pickMethod(ing),constraint:pick(constraints)};
+    console.error('CAMPくじ: 結果表示に失敗しました',err);
+    // 表示処理に失敗しても最低限の結果を作り直して再表示する
+    try{
+      if(state.mode==='B'){
+        state.result={dish:pick(dishes),constraint:pick(constraints)};
+      }else{
+        const ing=pick(ingredients);
+        state.result={ingredient:ing,dish:pickDishForIngredient(ing),method:pickMethod(ing),constraint:pick(constraints)};
+      }
+      renderResult();
+    }catch(fallbackErr){
+      console.error('CAMPくじ: フォールバックにも失敗しました',fallbackErr);
     }
-    try{renderResult();}catch(renderErr){console.error('CAMPくじ: 結果表示に失敗しました',renderErr);}
   }
 }
 $('drawBtn').addEventListener('click',()=>{
   if(drawFinished) drawFinished=false;
   state.ng=$('ngInput').value.split(/[,、]/).map(x=>x.trim()).filter(Boolean);
   state.tickets=state.people;
+
+  // 抽選結果の生成をタイマーの中に入れない。iPhone Safariでタイマーが
+  // 遅延・停止しても、結果そのものは先に完成している状態にする。
+  try{
+    makeResult();
+  }catch(err){
+    console.error('CAMPくじ: 抽選結果の生成に失敗しました',err);
+    if(state.mode==='B'){
+      state.result={dish:pick(dishes),constraint:pick(constraints)};
+    }else{
+      const ing=pick(ingredients);
+      state.result={ingredient:ing,dish:pickDishForIngredient(ing),method:pickMethod(ing),constraint:pick(constraints)};
+    }
+  }
+
   show('draw');
-  // iPhone Safariでも確実に抽選を完了させるため、単一のタイマーに依存せず二重のフォールバックを用意
+  // 通常は700ms後に結果へ。requestAnimationFrameも併用してSafariでの復帰を強化。
   setTimeout(finishDraw,700);
-  setTimeout(finishDraw,1800);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(finishDraw,100)));
 });
 $('newRound').addEventListener('click',()=>show('home'));
 document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.back)));
