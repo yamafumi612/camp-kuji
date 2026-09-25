@@ -447,11 +447,34 @@ document.querySelectorAll('[data-equip]').forEach(b=>b.addEventListener('click',
   b.classList.toggle('selected');
   state.equipment=[...document.querySelectorAll('[data-equip].selected')].map(x=>x.dataset.equip);
 }));
+let drawFinished=false;
+function finishDraw(){
+  if(drawFinished) return;
+  drawFinished=true;
+  // 先に結果画面へ切り替えることで、抽選処理中の例外で画面が固まるのを防ぐ
+  show('result');
+  try{
+    makeResult();
+  }catch(err){
+    console.error('CAMPくじ: 抽選結果の生成に失敗しました',err);
+    // 万一データ生成でエラーが出ても、最低限の結果を表示する
+    if(state.mode==='B'){
+      state.result={dish:pick(dishes),constraint:pick(constraints)};
+    }else{
+      const ing=pick(ingredients);
+      state.result={ingredient:ing,dish:pickDishForIngredient(ing),method:pickMethod(ing),constraint:pick(constraints)};
+    }
+    try{renderResult();}catch(renderErr){console.error('CAMPくじ: 結果表示に失敗しました',renderErr);}
+  }
+}
 $('drawBtn').addEventListener('click',()=>{
+  if(drawFinished) drawFinished=false;
   state.ng=$('ngInput').value.split(/[,、]/).map(x=>x.trim()).filter(Boolean);
   state.tickets=state.people;
   show('draw');
-  setTimeout(()=>{makeResult();show('result')},900);
+  // iPhone Safariでも確実に抽選を完了させるため、単一のタイマーに依存せず二重のフォールバックを用意
+  setTimeout(finishDraw,700);
+  setTimeout(finishDraw,1800);
 });
 $('newRound').addEventListener('click',()=>show('home'));
 document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.back)));
