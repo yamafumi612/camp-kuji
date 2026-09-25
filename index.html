@@ -434,7 +434,10 @@ function retry(key){
     if(key === "dish") state.result.dish = pick(dishes,state.result.dish);
     if(key === "constraint") state.result.constraint = pick(constraints,state.result.constraint);
   }else{
-    if(key === "ingredient") state.result.ingredient = pickIngredientForMethod(state.result.ingredient,state.result.method);
+    if(key === "ingredient") {
+      const pool = ingredients.filter(i => i !== state.result.ingredient && !blocked(i));
+      state.result.ingredient = pool.length ? rand(pool) : state.result.ingredient;
+    }
     if(key === "method") state.result.dish = pickDishForIngredient(state.result.ingredient,state.result.dish);
     if(key === "constraint") state.result.constraint = pick(constraints,state.result.constraint);
   }
