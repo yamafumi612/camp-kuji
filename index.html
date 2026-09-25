@@ -317,10 +317,20 @@ function stapleIngredientsForMethod(method){
 
 function makeResult(){
   state.used={dish:false,ingredient:false,method:false,constraint:false};
-  if(state.mode==="B"){
-    state.result={dish:pick(dishes),constraint:pick(constraints)};
+
+  // 方式ごとに結果データを完全に分離する
+  if(state.mode === "B"){
+    state.result = {
+      dish: pick(dishes),
+      constraint: pick(constraints)
+    };
   }else{
-    const ing=pick(ingredients); state.result={ingredient:ing,dish:pickDishForIngredient(ing),method:pickMethod(ing),constraint:pick(constraints)};
+    const ingredient = pick(ingredients);
+    state.result = {
+      ingredient: ingredient,
+      dish: pickDishForIngredient(ingredient),
+      constraint: pick(constraints)
+    };
   }
   renderResult();
 }
@@ -355,7 +365,9 @@ function renderResult(){
     html += `<div class="badges"><span class="badge">⏱ 約${e.time}分</span><span class="badge">💰 目安 ${e.cost.toLocaleString()}円</span></div>`;
     html += `<div class="card" style="margin:0;background:#f7f1e8"><b>縛り</b><div style="margin-top:6px">${r.constraint}</div></div>`;
   }else{
-    html += `<div class="small">今回の料理</div><div class="result-main">🎲 ${r.dish}</div><div class="small" style="margin-top:8px">使う食材：${r.ingredient}</div>`;
+    // 「食材から決める」は食材を主役として表示し、料理から決める結果と混在させない
+    html += `<div class="small">今回の食材</div><div class="result-main">🥩 ${r.ingredient}</div>`;
+    html += `<div class="card" style="margin:0 0 14px;background:#f7f1e8"><b>作る料理</b><div style="margin-top:6px;font-size:22px;font-weight:900">🍳 ${r.dish}</div></div>`;
     html += `<div class="badges"><span class="badge">⏱ 約${e.time}分</span><span class="badge">💰 目安 ${e.cost.toLocaleString()}円</span></div>`;
     html += `<div class="card" style="margin:0;background:#f7f1e8"><b>縛り</b><div style="margin-top:6px">${r.constraint}</div></div>`;
   }
@@ -414,16 +426,20 @@ function renderResult(){
 
 function retry(key){
   if(state.tickets<=0) return;
+
+  // リトライは選んだ項目だけ変更する
   state.tickets--;
 
-  if(key==="dish") state.result.dish=pick(dishes,state.result.dish);
-  if(key==="constraint") state.result.constraint=pick(constraints,state.result.constraint);
-  if(key==="ingredient"){
-    state.result.ingredient=pickIngredientForMethod(state.result.ingredient,state.result.method);
+  if(state.mode === "B"){
+    if(key === "dish") state.result.dish = pick(dishes,state.result.dish);
+    if(key === "constraint") state.result.constraint = pick(constraints,state.result.constraint);
+  }else{
+    if(key === "ingredient") state.result.ingredient = pickIngredientForMethod(state.result.ingredient,state.result.method);
+    if(key === "method") state.result.dish = pickDishForIngredient(state.result.ingredient,state.result.dish);
+    if(key === "constraint") state.result.constraint = pick(constraints,state.result.constraint);
   }
-  if(key==="method") state.result.dish=pickDishForIngredient(state.result.ingredient,state.result.dish);
 
-  const cycleKeys = state.mode==="B" ? ["dish","constraint"] : ["ingredient","method","constraint"];
+  const cycleKeys = state.mode === "B" ? ["dish","constraint"] : ["ingredient","method","constraint"];
   state.used[key]=true;
   if(cycleKeys.every(k=>state.used[k])) state.used={};
 
@@ -448,44 +464,33 @@ document.querySelectorAll('[data-equip]').forEach(b=>b.addEventListener('click',
   state.equipment=[...document.querySelectorAll('[data-equip].selected')].map(x=>x.dataset.equip);
 }));
 let drawFinished=false;
-function buildDrawResult(){
-  state.used={dish:false,ingredient:false,method:false,constraint:false};
-  if(state.mode==="B"){
-    state.result={dish:pick(dishes),constraint:pick(constraints)};
-  }else{
-    const ing=pick(ingredients);
-    const dish=pickDishForIngredient(ing);
-    state.result={ingredient:ing,dish:dish||"焼き料理",method:pickMethod(ing),constraint:pick(constraints)};
-  }
-}
 function finishDraw(){
   if(drawFinished) return;
   drawFinished=true;
+  // 先に結果画面へ切り替えることで、抽選処理中の例外で画面が固まるのを防ぐ
   show('result');
-  renderResult();
-}
-$('drawBtn').addEventListener('click',()=>{
-  drawFinished=false;
-  state.ng=$('ngInput').value.split(/[,、]/).map(x=>x.trim()).filter(Boolean);
-  state.tickets=state.people;
-
-  // 抽選結果は先に作るが、renderResultは結果画面へ移動した後だけ実行する。
-  // これにより「食材から決める」で結果表示処理が途中に割り込んで止まる問題を防ぐ。
   try{
-    buildDrawResult();
+    makeResult();
   }catch(err){
     console.error('CAMPくじ: 抽選結果の生成に失敗しました',err);
+    // 万一データ生成でエラーが出ても、最低限の結果を表示する
     if(state.mode==='B'){
-      state.result={dish:dishes[0],constraint:constraints[0]};
+      state.result={dish:pick(dishes),constraint:pick(constraints)};
     }else{
-      const ing=ingredients[0];
-      state.result={ingredient:ing,dish:(dishesForIngredient(ing)[0]||'焼き料理'),method:methods[0],constraint:constraints[0]};
+      const ing=pick(ingredients);
+      state.result={ingredient:ing,dish:pickDishForIngredient(ing),method:pickMethod(ing),constraint:pick(constraints)};
     }
+    try{renderResult();}catch(renderErr){console.error('CAMPくじ: 結果表示に失敗しました',renderErr);}
   }
-
+}
+$('drawBtn').addEventListener('click',()=>{
+  if(drawFinished) drawFinished=false;
+  state.ng=$('ngInput').value.split(/[,、]/).map(x=>x.trim()).filter(Boolean);
+  state.tickets=state.people;
   show('draw');
-  // Safariでも確実に次へ進むよう、1本のタイマーだけで結果画面へ遷移。
-  setTimeout(finishDraw,600);
+  // iPhone Safariでも確実に抽選を完了させるため、単一のタイマーに依存せず二重のフォールバックを用意
+  setTimeout(finishDraw,700);
+  setTimeout(finishDraw,1800);
 });
 $('newRound').addEventListener('click',()=>show('home'));
 document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.back)));
