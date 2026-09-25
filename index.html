@@ -67,7 +67,7 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padd
   </div>
   <div class="card">
     <h2>みんなでワイワイ、運任せ。</h2>
-    <p class="small">料理を決める「B方式」と、食材・調理法・縛りを組み合わせる「C方式」を選べます。</p>
+    <p class="small">「料理から決める」と「食材から決める」の2つの遊び方から選べます。</p>
     <button id="startBtn" class="primary">はじめる</button>
   </div>
   <div class="footer-note">Safari / Chrome対応・ログイン不要</div>
@@ -179,11 +179,19 @@ const ingredients = [
 "白菜","きのこ","とうもろこし","なす","ピーマン","パプリカ","トマト","アボカド","卵"
 ];
 
-const methods = ["鉄板焼き","網焼き","ホイル焼き","串焼き","アヒージョ","煮込み","炒め物","蒸し焼き","揚げ焼き","鍋","ホットサンド","スキレット焼き","炭火焼き","焚き火料理"];
+const methods = [
+"鉄板焼き","網焼き","ホイル焼き","串焼き","アヒージョ","煮込み","炒め物",
+"蒸し焼き","揚げ焼き","鍋","ホットサンド","スキレット焼き","炭火焼き",
+"炊き込みご飯","炒飯","焼きそば・焼きうどん","パスタ","丼にする",
+"混ぜご飯","リゾット","グラタン","カレー・煮込み","サンド・バーガー","スープ"
+];
+
 const constraints = [
 "チーズを使う","辛いものを入れる","缶詰を1つ使う","コンビニ食材を1つ使う",
-"追加食材は500円以内","焚き火だけで調理する","30分以内で完成させる","お酒に合う味付けにする",
-"野菜を3種類以上使う","にんにくを使う","卵を使う","調味料は3種類以内","洗い物を3個以内にする",
+"しょうゆを使う","味噌を使う","ポン酢を使う","めんつゆを使う","バターを使う",
+"ごま油を使う","オリーブオイルを使う","にんにくを使う","しょうがを使う",
+"和風に仕上げる","洋風に仕上げる","中華風に仕上げる","韓国風に仕上げる",
+"スパイスを1種類使う","野菜を3種類以上使う","卵を使う","調味料は3種類以内",
 "みんなで取り分けて食べる","普段のキャンプでは作らない料理にする","朝食でも食べられる味にする"
 ];
 
@@ -198,12 +206,90 @@ function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
 function blocked(v){return state.ng.some(n=>n && v.includes(n))}
 function pick(arr, current){let pool=arr.filter(x=>x!==current && !blocked(x)); return pool.length?rand(pool):current}
 
+const methodGroups = {
+  "炊き込みご飯":"rice","炒飯":"rice","焼きそば・焼きうどん":"noodle","パスタ":"pasta",
+  "丼にする":"rice","混ぜご飯":"rice","リゾット":"rice","グラタン":"bake",
+  "カレー・煮込み":"stew","サンド・バーガー":"bread","スープ":"soup",
+  "鉄板焼き":"direct","網焼き":"direct","ホイル焼き":"foil","串焼き":"direct",
+  "アヒージョ":"oil","煮込み":"stew","炒め物":"direct","蒸し焼き":"steam",
+  "揚げ焼き":"direct","鍋":"stew","ホットサンド":"bread","スキレット焼き":"direct","炭火焼き":"direct"
+};
+
+const ingredientAllowed = {
+  "とうもろこし":["rice","noodle","direct","foil","steam","stew","bake","soup","bread"],
+  "トマト":["rice","noodle","pasta","direct","foil","stew","bake","soup","bread"],
+  "アボカド":["rice","pasta","direct","bake","soup","bread"],
+  "卵":["rice","noodle","pasta","direct","stew","bake","bread","soup"],
+  "じゃがいも":["rice","direct","foil","steam","stew","bake","soup"],
+  "さつまいも":["rice","direct","foil","steam","stew","bake","bread"],
+  "玉ねぎ":["rice","noodle","pasta","direct","foil","stew","bake","soup","bread"],
+  "長ねぎ":["rice","noodle","direct","foil","stew","soup"],
+  "キャベツ":["rice","noodle","direct","foil","stew","bake","soup"],
+  "白菜":["rice","noodle","stew","soup","foil"],
+  "きのこ":["rice","noodle","pasta","direct","foil","stew","bake","soup"],
+  "なす":["rice","pasta","direct","foil","stew","bake","soup"],
+  "ピーマン":["rice","noodle","direct","stew","bake"],
+  "パプリカ":["rice","noodle","pasta","direct","stew","bake","soup"],
+  "豆腐":["rice","direct","foil","stew","soup","bake"],
+  "厚揚げ":["rice","noodle","direct","foil","stew","bake","soup"],
+  "魚":["rice","direct","foil","stew","bake","soup"],
+  "アサリ":["rice","pasta","stew","soup"],
+  "エビ":["rice","noodle","pasta","direct","foil","stew","bake","soup"],
+  "イカ":["rice","noodle","pasta","direct","foil","stew","bake","soup"],
+  "ホタテ":["rice","pasta","direct","foil","stew","bake","soup"],
+  "鮭":["rice","pasta","direct","foil","stew","bake","soup"],
+  "サバ":["rice","direct","foil","stew","bake","soup"],
+  "タラ":["rice","pasta","foil","stew","bake","soup"],
+  "牛肉":["rice","noodle","pasta","direct","foil","stew","bake","bread","soup"],
+  "豚バラ":["rice","noodle","pasta","direct","foil","stew","bake","bread","soup"],
+  "豚肩ロース":["rice","noodle","direct","foil","stew","bake","bread","soup"],
+  "鶏もも肉":["rice","noodle","pasta","direct","foil","stew","bake","bread","soup"],
+  "鶏むね肉":["rice","noodle","pasta","direct","foil","stew","bake","bread","soup"],
+  "手羽先":["rice","direct","foil","stew","bake","soup"],
+  "ソーセージ":["rice","noodle","pasta","direct","foil","stew","bake","bread","soup"],
+  "ウインナー":["rice","noodle","pasta","direct","foil","stew","bake","bread","soup"],
+  "ベーコン":["rice","noodle","pasta","direct","foil","stew","bake","bread","soup"],
+  "ハンバーグ":["rice","direct","bake","bread"],
+  "ラム肉":["rice","direct","foil","stew","bake","bread"],
+  "ツナ缶":["rice","noodle","pasta","direct","bake","bread","soup"],
+};
+
+function methodCompatible(ingredient, method){
+  const group = methodGroups[method];
+  if(!group) return true;
+  const allowed = ingredientAllowed[ingredient];
+  if(allowed) return allowed.includes(group);
+  return true;
+}
+
+function pickMethod(ingredient, current){
+  const pool = methods.filter(m => m!==current && methodCompatible(ingredient,m) && !blocked(m));
+  return pool.length ? rand(pool) : current;
+}
+
+function pickIngredientForMethod(current, method){
+  const pool = ingredients.filter(i => i!==current && methodCompatible(i,method) && !blocked(i));
+  return pool.length ? rand(pool) : current;
+}
+
+function stapleIngredientsForMethod(method){
+  if(method==="炊き込みご飯" || method==="炒飯" || method==="丼にする" || method==="混ぜご飯" || method==="リゾット")
+    return ["米 2合"];
+  if(method==="焼きそば・焼きうどん") return ["焼きそば麺またはうどん 2〜3玉"];
+  if(method==="パスタ") return ["パスタ 200〜250g"];
+  if(method==="ホットサンド" || method==="サンド・バーガー") return ["食パンまたはバンズ 2〜4個"];
+  if(method==="グラタン") return ["マカロニ 100g","ピザ用チーズ 80〜100g"];
+  if(method==="カレー・煮込み") return ["ごはん 2〜3合分"];
+  if(method==="スープ") return ["水またはスープ 500〜700ml"];
+  return [];
+}
+
 function makeResult(){
   state.used={dish:false,ingredient:false,method:false,constraint:false};
   if(state.mode==="B"){
     state.result={dish:pick(dishes),constraint:pick(constraints)};
   }else{
-    state.result={ingredient:pick(ingredients),method:pick(methods),constraint:pick(constraints)};
+    const ing=pick(ingredients); state.result={ingredient:ing,method:pickMethod(ing),constraint:pick(constraints)};
   }
   renderResult();
 }
@@ -264,13 +350,24 @@ function renderResult(){
     "ホットサンド":["パンに具材を挟む。","ホットサンドメーカーに入れて閉じる。","両面に焼き色がつくまで加熱する。"],
     "スキレット焼き":["スキレットを十分に熱する。","食材を入れて焼く。","裏返しながら中心まで火を通す。"],
     "炭火焼き":["炭火を安定させる。","食材を網に並べて焼く。","向きを変えながら全体に火を通す。"],
-    "焚き火料理":["火力が安定した状態にする。","鍋やフライパンに食材を入れて加熱する。","火力を調整しながら中心まで火を通す。"]
+    "焚き火料理":["火力が安定した状態にする。","鍋やフライパンに食材を入れて加熱する。","火力を調整しながら中心まで火を通す。"],
+    "炊き込みご飯":["米を洗い、分量の水を加える。","具材を食べやすい大きさに切る。","具材と調味料を米の上にのせ、混ぜすぎずに炊く。","炊き上がったら10分ほど蒸らす。","全体をしゃもじで混ぜる。"],
+    "炒飯":["ご飯を用意し、具材を細かく切る。","フライパンまたは鉄板を強めの火で熱する。","油をひき、具材と卵を炒める。","ご飯を加えてほぐしながら炒める。","調味料を加えて全体を炒め合わせる。"],
+    "焼きそば・焼きうどん":["麺をほぐせるよう少量の水を用意する。","具材を食べやすい大きさに切る。","鉄板またはフライパンで具材を炒める。","麺を加えて水を少量入れ、ほぐしながら炒める。","ソースまたはしょうゆ等で味付けする。"],
+    "パスタ":["パスタを表示時間どおりにゆでる。","具材を食べやすい大きさに切る。","フライパンで具材を炒め、調味料を加える。","ゆでたパスタを加えて全体を混ぜる。","味を確認して仕上げる。"],
+    "丼にする":["ご飯を炊くまたは用意する。","具材を食べやすい大きさに切る。","フライパンや鍋で具材を加熱する。","しょうゆ等で味付けし、ご飯の上に盛る。"],
+    "混ぜご飯":["ご飯を炊くまたは温かいご飯を用意する。","具材を加熱して食べやすい状態にする。","ご飯に具材と調味料を加える。","切るように全体を混ぜ合わせる。"],
+    "リゾット":["米を洗って水気を切る。","具材を小さく切って炒める。","米を加えて軽く炒める。","スープを少しずつ加えながら混ぜる。","米に芯が少し残る程度まで加熱する。"],
+    "グラタン":["具材を食べやすい大きさに切る。","具材とマカロニを加熱する。","耐熱容器に具材とソースを入れる。","チーズをのせる。","蓋やバーナー等で表面を焼き、チーズを溶かす。"],
+    "カレー・煮込み":["具材を一口大に切る。","鍋で肉や野菜を炒める。","水やスープを加えて煮る。","具材が柔らかくなるまで加熱する。","ルウや調味料を加えて味を整える。"],
+    "サンド・バーガー":["パンまたはバンズを用意する。","具材を食べやすい大きさに切る。","肉や野菜など必要な具材に火を通す。","パンに具材とソースを重ねる。"],
+    "スープ":["具材を食べやすい大きさに切る。","鍋に水またはスープを入れて加熱する。","具材を加えて煮る。","中心まで火が通ったら調味料で味を整える。"]
   };
 
   const detail = state.mode==="B"
     ? (recipeData[r.dish] || detailedDishFallback(r.dish))
     : {
-        ingredients:[`${r.ingredient}`,"玉ねぎ 1/2個","にんにく 1片","好みの野菜 1〜2種類","油 適量","塩・こしょう 適量","調味料 適量"],
+        ingredients:[`${r.ingredient}`, ...stapleIngredientsForMethod(r.method),"玉ねぎ 1/2個","にんにく 1片","好みの野菜 1〜2種類","油 適量","塩・こしょう 適量","調味料 適量"],
         steps:[
           `${r.ingredient}を食べやすい大きさに切る。`,
           ...(methodSteps[r.method] || ["フライパンまたは鍋を熱する。","食材を加えて火が通るまで加熱する。"]),
@@ -289,8 +386,8 @@ function retry(key){
   state.tickets--;
   state.used[key]=true;
   if(key==="dish") state.result.dish=pick(dishes,state.result.dish);
-  if(key==="ingredient") state.result.ingredient=pick(ingredients,state.result.ingredient);
-  if(key==="method") state.result.method=pick(methods,state.result.method);
+  if(key==="ingredient") state.result.ingredient=pickIngredientForMethod(state.result.ingredient,state.result.method);
+  if(key==="method") state.result.method=pickMethod(state.result.ingredient,state.result.method);
   if(key==="constraint") state.result.constraint=pick(constraints,state.result.constraint);
   renderResult();
 }
