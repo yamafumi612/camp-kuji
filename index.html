@@ -92,8 +92,8 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padd
   <div class="progress"><div style="width:66%"></div></div>
   <div class="card">
     <h2>くじの方式</h2>
-    <button class="choice selected" data-mode="C"><b>🎲 C方式：食材＋調理法＋縛り</b><br><span class="small">組み合わせ次第で意外な料理が誕生。</span></button>
-    <button class="choice" data-mode="B"><b>🍳 B方式：料理＋縛り</b><br><span class="small">有名料理・キャンプ料理から料理そのものを決定。</span></button>
+    <button class="choice selected" data-mode="C"><b>🎲 食材から決める</b><br><span class="small">食材・調理法・縛りを組み合わせて決定。</span></button>
+    <button class="choice" data-mode="B"><b>🍳 料理から決める</b><br><span class="small">料理そのものと縛りを決定。</span></button>
     <button id="modeNext" class="primary">次へ</button>
   </div>
 </section>
@@ -116,7 +116,6 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padd
       <button class="chip selected" data-equip="フライパン">フライパン</button>
       <button class="chip selected" data-equip="網">網</button>
       <button class="chip selected" data-equip="鍋">鍋</button>
-      <button class="chip selected" data-equip="焚き火">焚き火</button>
     </div>
     <label>NG食材（任意・カンマ区切り）</label>
     <input id="ngInput" type="text" placeholder="例：エビ、チーズ、辛いもの">
@@ -246,12 +245,26 @@ function renderResult(){
     : [r.ingredient, "調味料・薬味（料理に合わせて）", "指定された縛りの追加食材"]
   ).map(x=>`<li>${x}</li>`).join('');
 
-  $('recipe').innerHTML = [
-    state.mode==="B" ? `${r.dish}を作るための下ごしらえをする。` : `${r.ingredient}を食べやすい大きさに切る。`,
-    `${r.method}で火を入れる。`,
-    `${r.constraint}を満たすように仕上げる。`,
-    "味を整えて、みんなで取り分けて完成！"
-  ].map(x=>`<li>${x}</li>`).join('');
+  const methodSteps = {
+    "鉄板焼き":["鉄板を十分に熱する。","食材を鉄板に並べて焼く。","焼き色がついたら裏返し、火が通るまで焼く。"],
+    "網焼き":["網を十分に熱する。","食材を網に並べて焼く。","焼き色がついたら裏返し、中心まで火が通るように焼く。"],
+    "ホイル焼き":["食材をアルミホイルで包む。","包みをしっかり閉じる。","熱した場所に置き、蒸し焼きにする。"],
+    "串焼き":["食材を食べやすい大きさに切って串に刺す。","火が強すぎない場所で焼く。","途中で向きを変え、全体に火を通す。"],
+    "アヒージョ":["食材を食べやすい大きさに切る。","油と食材を鍋に入れて加熱する。","弱めの火で食材に火が通るまで煮る。"],
+    "煮込み":["食材を鍋に入れて加熱する。","沸騰したら火を弱める。","具材が柔らかくなるまで煮込む。"],
+    "炒め物":["フライパンを熱する。","食材を入れて炒める。","全体に火が通るまで混ぜながら炒める。"],
+    "蒸し焼き":["食材をフライパンに入れる。","少量の水を加えて蓋をする。","蒸気で中まで火が通るまで加熱する。"],
+    "揚げ焼き":["フライパンに多めの油を熱する。","食材を並べて焼く。","裏返して両面をこんがり焼く。"],
+    "鍋":["鍋に食材と必要な液体を入れて加熱する。","沸騰したら火を弱める。","具材に火が通るまで加熱する。"],
+    "ホットサンド":["パンに具材を挟む。","ホットサンドメーカーに入れて閉じる。","両面に焼き色がつくまで加熱する。"],
+    "スキレット焼き":["スキレットを十分に熱する。","食材を入れて焼く。","裏返しながら中心まで火を通す。"],
+    "炭火焼き":["炭火を安定させる。","食材を網に並べて焼く。","向きを変えながら全体に火を通す。"],
+    "焚き火料理":["火力が安定した状態にする。","鍋やフライパンに食材を入れて加熱する。","火力を調整しながら中心まで火を通す。"]
+  };
+  const steps = state.mode==="B"
+    ? [`${r.dish}の材料を食べやすい大きさに切る。`, "フライパンを熱して材料を加熱する。", "全体に火が通るまで調理する。"]
+    : (methodSteps[r.method] || ["食材を食べやすい大きさに切る。","加熱して火を通す。"]);
+  $("recipe").innerHTML = steps.map(x=>`<li>${x}</li>`).join('');
 
   document.querySelectorAll('[data-retry]').forEach(btn=>btn.addEventListener('click',()=>retry(btn.dataset.retry)));
 }
