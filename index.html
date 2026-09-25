@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CAMPくじ</title>
+<style>
+body{font-family:-apple-system,sans-serif;background:#f4f1e8;padding:20px;max-width:500px;margin:auto}
+.page{display:none}.page.active{display:block}
+.card{background:#fff;padding:20px;border-radius:16px;margin:12px 0;border:1px solid #ddd}
+button{width:100%;padding:14px;border:0;border-radius:12px;background:#2f4a37;color:#fff;font-weight:bold;margin-top:10px}
+.small{display:flex;gap:10px}.small button{width:auto;padding:10px 15px}
+.choice{border:2px solid #ccc;padding:15px;border-radius:12px;margin:10px 0}
+.choice.sel{border-color:#2f4a37;background:#eef4ef}
+</style>
+</head><body>
+<div id="home" class="page active">
+<div class="card"><h1>🏕️ CAMPくじ</h1><p>キャンプ飯をくじで決めよう</p>
+<button id="startBtn">🎲 はじめる</button></div></div>
+
+<div id="people" class="page">
+<div class="card"><h2>何人？</h2>
+<div class="small"><button id="minus">−</button><h1 id="count">4人</h1><button id="plus">＋</button></div>
+<p>リトライ券: <span id="ticket">4</span>枚</p>
+<button id="toMode">次へ</button></div></div>
+
+<div id="mode" class="page">
+<div class="card"><h2>モード選択</h2>
+<div class="choice sel" data-mode="B">🍳 料理＋縛り</div>
+<div class="choice" data-mode="C">🎲 食材＋調理法＋縛り</div>
+<button id="drawBtn">くじを引く</button></div></div>
+
+<div id="result" class="page">
+<div class="card"><h2>結果</h2>
+<h1 id="resultText"></h1>
+<p>🎟️ 残り: <span id="left"></span>枚</p>
+<div id="retryArea"></div>
+<button id="homeBtn">ホームへ</button></div></div>
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+ let people=4,tickets=4,mode="B";
+ const dishes=["焼きそば","アヒージョ","ホットサンド","チーズタッカルビ"];
+ const rules=["チーズ追加","辛口","缶詰使用","焚き火限定"];
+ const foods=["牛肉","豚バラ","鶏もも","エビ"];
+ const cooks=["鉄板焼き","ホイル焼き","串焼き"];
+
+ function show(id){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+ }
+
+ document.getElementById("startBtn").onclick=()=>show("people");
+ document.getElementById("plus").onclick=()=>{people++;tickets=people;update()};
+ document.getElementById("minus").onclick=()=>{if(people>1){people--;tickets=people;update()}};
+ document.getElementById("toMode").onclick=()=>show("mode");
+ document.querySelectorAll(".choice").forEach(c=>{
+  c.onclick=()=>{
+   document.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
+   c.classList.add("sel");
+   mode=c.dataset.mode;
+  };
+ });
+
+ function update(){
+  count.textContent=people+"人";
+  ticket.textContent=tickets;
+ }
+
+ function rand(a){return a[Math.floor(Math.random()*a.length)]}
+
+ drawBtn.onclick=()=>{
+   let result="";
+   if(mode==="B"){
+     result=rand(dishes)+" ＋ "+rand(rules);
+   }else{
+     result=rand(foods)+"の"+rand(cooks)+"（"+rand(rules)+"）";
+   }
+   resultText.textContent=result;
+   left.textContent=tickets;
+   retryArea.innerHTML='<button id="retry">🎟️ リトライ</button>';
+   document.getElementById("retry").onclick=()=>{
+      if(tickets>0){tickets--; drawBtn.onclick();}
+   };
+   show("result");
+ };
+
+ homeBtn.onclick=()=>show("home");
+ update();
+});
+</script>
+</body></html>
