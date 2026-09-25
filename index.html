@@ -1,90 +1,299 @@
 <!doctype html>
-<html lang="ja"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f6f1e8">
 <title>CAMPくじ</title>
 <style>
-body{font-family:-apple-system,sans-serif;background:#f4f1e8;padding:20px;max-width:500px;margin:auto}
-.page{display:none}.page.active{display:block}
-.card{background:#fff;padding:20px;border-radius:16px;margin:12px 0;border:1px solid #ddd}
-button{width:100%;padding:14px;border:0;border-radius:12px;background:#2f4a37;color:#fff;font-weight:bold;margin-top:10px}
-.small{display:flex;gap:10px}.small button{width:auto;padding:10px 15px}
-.choice{border:2px solid #ccc;padding:15px;border-radius:12px;margin:10px 0}
-.choice.sel{border-color:#2f4a37;background:#eef4ef}
+:root{
+  --bg:#f6f1e8;--card:#fffdf9;--text:#26221d;--muted:#776f66;
+  --accent:#2f6b4f;--accent2:#d88945;--line:#e5ddd2;--danger:#b94a48;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+button,input{font:inherit}
+button{cursor:pointer}
+.app{max-width:520px;margin:0 auto;min-height:100vh;padding:20px 16px 36px}
+.screen{display:none}.screen.active{display:block}
+.hero{padding:28px 8px 22px;text-align:center}
+.logo{font-size:42px;font-weight:900;letter-spacing:.04em}
+.subtitle{color:var(--muted);margin-top:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin:12px 0;box-shadow:0 4px 18px rgba(50,35,20,.05)}
+h1,h2,h3{margin:0 0 10px}
+h2{font-size:23px}.section-title{font-weight:800;margin:20px 0 10px}
+.primary,.secondary,.danger,.choice{width:100%;border:0;border-radius:14px;padding:15px 16px;font-weight:800;margin-top:10px}
+.primary{background:var(--accent);color:white}.secondary{background:#eee7dd;color:var(--text)}
+.danger{background:#f6dddd;color:var(--danger)}
+.choice{background:white;border:1px solid var(--line);text-align:left}
+.choice.selected{border:2px solid var(--accent);background:#edf6f0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.counter{display:flex;align-items:center;justify-content:center;gap:20px;margin:18px 0}
+.counter button{width:52px;height:52px;border:0;border-radius:50%;background:#eee7dd;font-size:26px}
+.count{font-size:38px;font-weight:900;min-width:60px;text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:white;border-radius:999px;padding:9px 12px}
+.chip.selected{background:#edf6f0;border-color:var(--accent);color:var(--accent);font-weight:800}
+label{display:block;font-weight:700;margin:12px 0 6px}
+input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:white}
+.result-main{font-size:30px;font-weight:900;line-height:1.25;margin:6px 0 16px}
+.badges{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.badge{background:#eee7dd;border-radius:999px;padding:7px 10px;font-size:13px}
+.retry-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.retry-btn{border:1px solid var(--line);background:white;border-radius:12px;padding:12px 8px;font-weight:800}
+.retry-btn:disabled{opacity:.4}
+.ticket{display:flex;justify-content:space-between;align-items:center;background:#f3eadf;border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.ticket strong{font-size:22px}
+.small{font-size:13px;color:var(--muted);line-height:1.6}
+.list{margin:8px 0 0;padding-left:20px;line-height:1.8}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.back{border:0;background:transparent;padding:8px 0;font-weight:800}
+.progress{height:6px;background:#e7dfd5;border-radius:99px;overflow:hidden;margin-bottom:18px}
+.progress>div{height:100%;background:var(--accent)}
+.spin{font-size:56px;text-align:center;padding:35px 0;animation:pulse .65s infinite alternate}
+@keyframes pulse{to{transform:scale(1.12) rotate(4deg)}}
+.hidden{display:none!important}
+.footer-note{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
 </style>
-</head><body>
-<div id="home" class="page active">
-<div class="card"><h1>🏕️ CAMPくじ</h1><p>キャンプ飯をくじで決めよう</p>
-<button id="startBtn">🎲 はじめる</button></div></div>
+</head>
+<body>
+<div class="app">
 
-<div id="people" class="page">
-<div class="card"><h2>何人？</h2>
-<div class="small"><button id="minus">−</button><h1 id="count">4人</h1><button id="plus">＋</button></div>
-<p>リトライ券: <span id="ticket">4</span>枚</p>
-<button id="toMode">次へ</button></div></div>
+<section id="home" class="screen active">
+  <div class="hero">
+    <div class="logo">🏕️ CAMPくじ</div>
+    <div class="subtitle">今日のキャンプ飯、くじで決めよう。</div>
+  </div>
+  <div class="card">
+    <h2>みんなでワイワイ、運任せ。</h2>
+    <p class="small">料理を決める「B方式」と、食材・調理法・縛りを組み合わせる「C方式」を選べます。</p>
+    <button id="startBtn" class="primary">はじめる</button>
+  </div>
+  <div class="footer-note">Safari / Chrome対応・ログイン不要</div>
+</section>
 
-<div id="mode" class="page">
-<div class="card"><h2>モード選択</h2>
-<div class="choice sel" data-mode="B">🍳 料理＋縛り</div>
-<div class="choice" data-mode="C">🎲 食材＋調理法＋縛り</div>
-<button id="drawBtn">くじを引く</button></div></div>
+<section id="people" class="screen">
+  <div class="topbar"><button class="back" data-back="home">‹ 戻る</button><span>1 / 3</span></div>
+  <div class="progress"><div style="width:33%"></div></div>
+  <div class="card">
+    <h2>何人で遊ぶ？</h2>
+    <div class="counter">
+      <button id="minus">−</button><div id="peopleCount" class="count">4</div><button id="plus">＋</button>
+    </div>
+    <div class="ticket"><span>🎟️ リトライ券</span><strong id="ticketCount">4</strong><span>枚</span></div>
+    <p class="small">リトライ券は全員で共有。1枚につき「料理 / 食材 / 調理法 / 縛り」のどれか1部分だけ変更できます。</p>
+    <button id="peopleNext" class="primary">次へ</button>
+  </div>
+</section>
 
-<div id="result" class="page">
-<div class="card"><h2>結果</h2>
-<h1 id="resultText"></h1>
-<p>🎟️ 残り: <span id="left"></span>枚</p>
-<div id="retryArea"></div>
-<button id="homeBtn">ホームへ</button></div></div>
+<section id="mode" class="screen">
+  <div class="topbar"><button class="back" data-back="people">‹ 戻る</button><span>2 / 3</span></div>
+  <div class="progress"><div style="width:66%"></div></div>
+  <div class="card">
+    <h2>くじの方式</h2>
+    <button class="choice selected" data-mode="C"><b>🎲 C方式：食材＋調理法＋縛り</b><br><span class="small">組み合わせ次第で意外な料理が誕生。</span></button>
+    <button class="choice" data-mode="B"><b>🍳 B方式：料理＋縛り</b><br><span class="small">有名料理・キャンプ料理から料理そのものを決定。</span></button>
+    <button id="modeNext" class="primary">次へ</button>
+  </div>
+</section>
+
+<section id="settings" class="screen">
+  <div class="topbar"><button class="back" data-back="mode">‹ 戻る</button><span>3 / 3</span></div>
+  <div class="progress"><div style="width:100%"></div></div>
+  <div class="card">
+    <h2>くじ設定</h2>
+    <label>予算</label>
+    <div id="budgetChips" class="chips">
+      <button class="chip selected" data-budget="1500">〜1,500円</button>
+      <button class="chip" data-budget="3000">〜3,000円</button>
+      <button class="chip" data-budget="5000">〜5,000円</button>
+      <button class="chip" data-budget="none">制限なし</button>
+    </div>
+    <label>使える調理器具</label>
+    <div id="equipChips" class="chips">
+      <button class="chip selected" data-equip="鉄板">鉄板</button>
+      <button class="chip selected" data-equip="フライパン">フライパン</button>
+      <button class="chip selected" data-equip="網">網</button>
+      <button class="chip selected" data-equip="鍋">鍋</button>
+      <button class="chip selected" data-equip="焚き火">焚き火</button>
+    </div>
+    <label>NG食材（任意・カンマ区切り）</label>
+    <input id="ngInput" type="text" placeholder="例：エビ、チーズ、辛いもの">
+    <button id="drawBtn" class="primary">🎰 くじを引く</button>
+  </div>
+</section>
+
+<section id="draw" class="screen">
+  <div class="card">
+    <div class="spin">🎰</div>
+    <h2 style="text-align:center">抽選中……</h2>
+    <p class="small" style="text-align:center">運命のキャンプ飯を決定しています</p>
+  </div>
+</section>
+
+<section id="result" class="screen">
+  <div class="topbar"><button class="back" data-back="home">⌂ ホーム</button><span id="resultMode"></span></div>
+  <div class="card">
+    <div class="ticket"><span>🎟️ 残りリトライ券</span><strong id="resultTickets">0</strong><span>枚</span></div>
+    <div id="resultContent"></div>
+    <div class="section-title">🔄 部分リトライ</div>
+    <p class="small">変えたい部分だけ選んでください。ほかの結果はそのまま残ります。</p>
+    <div id="retryGrid" class="retry-grid"></div>
+  </div>
+  <div class="card">
+    <h3>🛒 買い物リスト</h3>
+    <ul id="shopping" class="list"></ul>
+  </div>
+  <div class="card">
+    <h3>👨‍🍳 作り方</h3>
+    <ol id="recipe" class="list"></ol>
+  </div>
+  <button id="newRound" class="secondary">もう一度、最初から</button>
+</section>
+
+</div>
 
 <script>
-document.addEventListener("DOMContentLoaded",()=>{
- let people=4,tickets=4,mode="B";
- const dishes=["焼きそば","アヒージョ","ホットサンド","チーズタッカルビ"];
- const rules=["チーズ追加","辛口","缶詰使用","焚き火限定"];
- const foods=["牛肉","豚バラ","鶏もも","エビ"];
- const cooks=["鉄板焼き","ホイル焼き","串焼き"];
+(function(){
+'use strict';
 
- function show(id){
-  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
- }
+const dishes = [
+"チーズタッカルビ","アヒージョ","ホイル焼き","焼きそば","豚バラ串焼き","ホットサンド",
+"カレーライス","キーマカレー","バターチキンカレー","ハンバーグ","煮込みハンバーグ","ローストビーフ",
+"ステーキ","ビーフシチュー","肉じゃが","豚の角煮","生姜焼き","酢豚","回鍋肉","麻婆豆腐",
+"餃子","水餃子","小籠包","チャプチェ","プルコギ","サムギョプサル","ヤンニョムチキン",
+"タンドリーチキン","ガパオライス","海南鶏飯","パエリア","リゾット","ペペロンチーノ",
+"カルボナーラ","ナポリタン","ボロネーゼ","ペンネアラビアータ","ラザニア","ピザ",
+"お好み焼き","もんじゃ焼き","たこ焼き","焼き鳥","唐揚げ","フライドポテト",
+"フィッシュ＆チップス","サバ味噌煮","鮭のちゃんちゃん焼き","ブイヤベース","クラムチャウダー",
+"ミネストローネ","ポトフ","トマト煮込み","チキン南蛮","親子丼","牛丼","豚丼","オムライス",
+"チャーハン","天津飯","ビビンバ","タコライス","ロコモコ","ナシゴレン","ジャンバラヤ",
+"ブリトー","タコス","ケサディーヤ","ナチョス","バッファローチキン","チリコンカン",
+"シーフードグラタン","マカロニグラタン","ドリア","チーズフォンデュ","ラクレット風焼き野菜"
+];
 
- document.getElementById("startBtn").onclick=()=>show("people");
- document.getElementById("plus").onclick=()=>{people++;tickets=people;update()};
- document.getElementById("minus").onclick=()=>{if(people>1){people--;tickets=people;update()}};
- document.getElementById("toMode").onclick=()=>show("mode");
- document.querySelectorAll(".choice").forEach(c=>{
-  c.onclick=()=>{
-   document.querySelectorAll(".choice").forEach(x=>x.classList.remove("sel"));
-   c.classList.add("sel");
-   mode=c.dataset.mode;
-  };
- });
+const ingredients = [
+"牛肉","豚バラ","豚肩ロース","鶏もも肉","鶏むね肉","手羽先","ソーセージ","ベーコン",
+"ハンバーグ","ラム肉","エビ","イカ","ホタテ","鮭","サバ","タラ","アサリ","ツナ缶",
+"厚揚げ","豆腐","ウインナー","じゃがいも","さつまいも","玉ねぎ","長ねぎ","キャベツ",
+"白菜","きのこ","とうもろこし","なす","ピーマン","パプリカ","トマト","アボカド","卵"
+];
 
- function update(){
-  count.textContent=people+"人";
-  ticket.textContent=tickets;
- }
+const methods = ["鉄板焼き","網焼き","ホイル焼き","串焼き","アヒージョ","煮込み","炒め物","蒸し焼き","揚げ焼き","鍋","ホットサンド","スキレット焼き","炭火焼き","焚き火料理"];
+const constraints = [
+"チーズを使う","辛いものを入れる","缶詰を1つ使う","コンビニ食材を1つ使う",
+"追加食材は500円以内","焚き火だけで調理する","30分以内で完成させる","お酒に合う味付けにする",
+"野菜を3種類以上使う","にんにくを使う","卵を使う","調味料は3種類以内","洗い物を3個以内にする",
+"みんなで取り分けて食べる","普段のキャンプでは作らない料理にする","朝食でも食べられる味にする"
+];
 
- function rand(a){return a[Math.floor(Math.random()*a.length)]}
+const state = {
+  people:4, mode:"C", budget:"1500", equipment:["鉄板","フライパン","網","鍋","焚き火"],
+  ng:[], tickets:4, result:null, used:{dish:false,ingredient:false,method:false,constraint:false}
+};
 
- drawBtn.onclick=()=>{
-   let result="";
-   if(mode==="B"){
-     result=rand(dishes)+" ＋ "+rand(rules);
-   }else{
-     result=rand(foods)+"の"+rand(cooks)+"（"+rand(rules)+"）";
-   }
-   resultText.textContent=result;
-   left.textContent=tickets;
-   retryArea.innerHTML='<button id="retry">🎟️ リトライ</button>';
-   document.getElementById("retry").onclick=()=>{
-      if(tickets>0){tickets--; drawBtn.onclick();}
-   };
-   show("result");
- };
+const $ = id => document.getElementById(id);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');window.scrollTo(0,0)}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function blocked(v){return state.ng.some(n=>n && v.includes(n))}
+function pick(arr, current){let pool=arr.filter(x=>x!==current && !blocked(x)); return pool.length?rand(pool):current}
 
- homeBtn.onclick=()=>show("home");
- update();
+function makeResult(){
+  state.used={dish:false,ingredient:false,method:false,constraint:false};
+  if(state.mode==="B"){
+    state.result={dish:pick(dishes),constraint:pick(constraints)};
+  }else{
+    state.result={ingredient:pick(ingredients),method:pick(methods),constraint:pick(constraints)};
+  }
+  renderResult();
+}
+
+function estimate(){
+  const r=state.result;
+  let base=state.mode==="B"?1000:800;
+  if(r.dish && /ステーキ|ローストビーフ|パエリア|ブイヤベース|ラクレット/.test(r.dish)) base+=900;
+  if(r.ingredient && /牛肉|ラム肉|ホタテ|エビ/.test(r.ingredient)) base+=700;
+  if(r.constraint==="追加食材は500円以内") base=Math.min(base+500,base+500);
+  const time=state.mode==="B" ? (20+Math.floor(Math.random()*25)) : (15+Math.floor(Math.random()*25));
+  return {cost:state.budget==="none"?base:Math.min(base,Number(state.budget)),time};
+}
+
+function renderResult(){
+  const r=state.result, e=estimate();
+  $('resultMode').textContent=state.mode==="B"?"B方式":"C方式";
+  $('resultTickets').textContent=state.tickets;
+  let html="";
+  if(state.mode==="B"){
+    html += `<div class="small">今日の料理</div><div class="result-main">🍳 ${r.dish}</div>`;
+    html += `<div class="badges"><span class="badge">⏱ 約${e.time}分</span><span class="badge">💰 目安 ${e.cost.toLocaleString()}円</span></div>`;
+    html += `<div class="card" style="margin:0;background:#f7f1e8"><b>縛り</b><div style="margin-top:6px">${r.constraint}</div></div>`;
+  }else{
+    html += `<div class="small">今回の組み合わせ</div><div class="result-main">🎲 ${r.ingredient}<br>× ${r.method}</div>`;
+    html += `<div class="badges"><span class="badge">⏱ 約${e.time}分</span><span class="badge">💰 目安 ${e.cost.toLocaleString()}円</span></div>`;
+    html += `<div class="card" style="margin:0;background:#f7f1e8"><b>縛り</b><div style="margin-top:6px">${r.constraint}</div></div>`;
+  }
+  $('resultContent').innerHTML=html;
+
+  const buttons = state.mode==="B"
+    ? [{key:"dish",label:"🍳 料理だけ変更"},{key:"constraint",label:"🔥 縛りだけ変更"}]
+    : [{key:"ingredient",label:"🥩 食材だけ変更"},{key:"method",label:"🍳 調理法だけ変更"},{key:"constraint",label:"🔥 縛りだけ変更"}];
+
+  $('retryGrid').innerHTML=buttons.map(b=>`<button class="retry-btn" data-retry="${b.key}" ${state.tickets<=0||state.used[b.key]?'disabled':''}>${b.label}</button>`).join('');
+
+  $('shopping').innerHTML = (state.mode==="B"
+    ? [r.dish, "指定された縛りの追加食材"]
+    : [r.ingredient, "調味料・薬味（料理に合わせて）", "指定された縛りの追加食材"]
+  ).map(x=>`<li>${x}</li>`).join('');
+
+  $('recipe').innerHTML = [
+    state.mode==="B" ? `${r.dish}を作るための下ごしらえをする。` : `${r.ingredient}を食べやすい大きさに切る。`,
+    `${r.method}で火を入れる。`,
+    `${r.constraint}を満たすように仕上げる。`,
+    "味を整えて、みんなで取り分けて完成！"
+  ].map(x=>`<li>${x}</li>`).join('');
+
+  document.querySelectorAll('[data-retry]').forEach(btn=>btn.addEventListener('click',()=>retry(btn.dataset.retry)));
+}
+
+function retry(key){
+  if(state.tickets<=0 || state.used[key]) return;
+  state.tickets--;
+  state.used[key]=true;
+  if(key==="dish") state.result.dish=pick(dishes,state.result.dish);
+  if(key==="ingredient") state.result.ingredient=pick(ingredients,state.result.ingredient);
+  if(key==="method") state.result.method=pick(methods,state.result.method);
+  if(key==="constraint") state.result.constraint=pick(constraints,state.result.constraint);
+  renderResult();
+}
+
+$('startBtn').addEventListener('click',()=>show('people'));
+$('minus').addEventListener('click',()=>{if(state.people>1){state.people--;state.tickets=state.people;$('peopleCount').textContent=state.people;$('ticketCount').textContent=state.tickets}});
+$('plus').addEventListener('click',()=>{if(state.people<12){state.people++;state.tickets=state.people;$('peopleCount').textContent=state.people;$('ticketCount').textContent=state.tickets}});
+$('peopleNext').addEventListener('click',()=>show('mode'));
+
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-mode]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');state.mode=b.dataset.mode;
+}));
+$('modeNext').addEventListener('click',()=>show('settings'));
+
+document.querySelectorAll('[data-budget]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-budget]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');state.budget=b.dataset.budget;
+}));
+document.querySelectorAll('[data-equip]').forEach(b=>b.addEventListener('click',()=>{
+  b.classList.toggle('selected');
+  state.equipment=[...document.querySelectorAll('[data-equip].selected')].map(x=>x.dataset.equip);
+}));
+$('drawBtn').addEventListener('click',()=>{
+  state.ng=$('ngInput').value.split(/[,、]/).map(x=>x.trim()).filter(Boolean);
+  state.tickets=state.people;
+  show('draw');
+  setTimeout(()=>{makeResult();show('result')},900);
 });
+$('newRound').addEventListener('click',()=>show('home'));
+document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.back)));
+
+})();
 </script>
-</body></html>
+</body>
+</html>
